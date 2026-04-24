@@ -1,4 +1,4 @@
-# Significance Index (Si) — PCOS Gene Prioritization Framework
+# Significance Index (Si) — Gene Prioritization Framework
 
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![Preprint](https://img.shields.io/badge/Preprint-Research%20Square-blue)](https://www.researchsquare.com/article/rs-8610143/v1)
