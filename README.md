@@ -70,22 +70,6 @@ National Institute of Technology Durgapur, West Bengal – 713209, India
 📧 dde.bt@nitdgp.ac.in
 
 ---
-## Citation
-
-If you use this code, please cite:
-
-```bibtex
-@article{rajavelu2025pcos,
-  title   = {Evidence-based genetic variants to gene mapping and prioritization uncovers 
-             distinct molecular pathophysiology and therapeutic landscape in polycystic 
-             ovary syndrome patients of different ethnicities},
-  author  = {Rajavelu, Sindhuja and De, Debojyoti},
-  journal = {Research Square (Preprint)},
-  year    = {2025},
-  doi     = {10.21203/rs.3.rs-8610143/v1},
-  url     = {https://www.researchsquare.com/article/rs-8610143/v1}
-}
----
 
 ## License
 
