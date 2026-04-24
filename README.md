@@ -1,40 +1,92 @@
-# Significance-Index: Evidence-based Genetic Variant to Gene Mapping & Prioritization
+# Significance Index (Si) — PCOS Gene Prioritization Framework
 
-## About the Project
-This repository contains the source code for the Significance-Index framework, as detailed in the study: **"Evidence-based genetic variants to gene mapping and prioritization uncovers distinct molecular pathophysiology and therapeutic landscape in polycystic ovary syndrome patients of different ethnicities."** 📄 **Preprint:** [10.21203/rs.3.rs-8610143/v1](https://www.researchsquare.com/article/rs-8610143/v1)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Preprint](https://img.shields.io/badge/Preprint-Research%20Square-blue)](https://www.researchsquare.com/article/rs-8610143/v1)
+[![Status: Under Review](https://img.shields.io/badge/Status-Under%20Review-yellow)](https://www.researchsquare.com/article/rs-8610143/v1)
 
-The Significance-Index is an integrative, population-aware framework designed to bridge the gap between non-coding GWAS variants and clinically actionable targets. By systematically combining tissue-specific regulatory functional genomics, long-range chromatin interactions, genome-wide quantitative trait loci (QTLs), and protein–protein interaction (PPI) networks, the pipeline accurately ranks disease-associated genes. 
+This repository contains the analysis code associated with the preprint:
 
-At the core of the methodology is a percentile rank-based scoring method—utilizing an empirical cumulative distribution function (eCDF)—to calculate the **Significance Index (Si rating)** for gene prioritization.
+> **Rajavelu S & De D.** *Evidence-based genetic variants to gene mapping and prioritization uncovers distinct molecular pathophysiology and therapeutic landscape in polycystic ovary syndrome patients of different ethnicities.* Research Square (2025). https://doi.org/10.21203/rs.3.rs-8610143/v1
 
-## Key Features
-* **Multi-Predictor Variant Mapping:** Integrates functional annotations and tissue-specific regulatory data (e.g., ovarian tissue) to map variants to target genes.
-* **Significance Index (Si) Computation:** Uses an eCDF framework to calculate quantitative traits (qGenes) and functional evidence scores.
-* **Population-Specific Analytics:** Built to uncover ethnic heterogeneity (e.g., distinguishing between East Asian and European molecular phenotypes).
-* **Advanced Network Topologies:** Features community detection, node removal analysis, and inter-tissue cross-talk modularity.
-* **Therapeutic Repurposing:** Maps genetics to current therapeutics (G2CT) to identify novel druggable targets.
+---
 
-## Prerequisites & Environment
-The pipeline relies heavily on **R** and **Python** for statistical analysis and network generation. 
-* **R:** Utilized for core statistical tests (one-sided Fisher's exact tests, Benjamini-Hochberg FDR) and network topology analysis (e.g., `igraph` for pathway crosstalk and community detection).
-* **Python:** Utilized for data processing and generating visualizations.
+## Overview
 
-*Note: The visualization scripts in this repository are pre-configured to export high-resolution, publication-quality graphics (600 DPI JPEGs), including binary heatmaps, ridge plots of Si ratings, and hierarchical circular subgraphs.*
+Polycystic ovary syndrome (PCOS) is a complex endocrine disorder with strong genetic underpinnings, yet the majority of GWAS-identified variants reside in non-coding regions, making effector gene assignment and therapeutic translation challenging. This study implements an integrative, **population-stratified gene prioritization framework** applied to East Asian (EAS) and European (EUR) PCOS GWAS cohorts across seven disease-relevant tissues.
 
-## Repository Structure & Usage
-The codebase is organized into modular steps matching the study's analytical workflow:
+The framework maps non-coding GWAS variants to candidate effector genes through three complementary regulatory layers, integrates protein–protein interaction (PPI) network diffusion, and scores all genes using a unified **Significance Index (Si)** — a composite score ranging from 0 to 5. The approach uncovers population-specific molecular phenotypes: **metabolic dysregulation** predominates in EAS PCOS, while **inflammatory and immune-related signatures** are more prominent in EUR PCOS.
 
-1.  **GWAS Processing (`/01_gwas_processing`):** Scripts for handling summary-level data and identifying core genes under genomic influence.
-2.  **Gene Annotation & Scoring (`/02_si_scoring`):** Implementation of the eCDF formulas to calculate the final Si rating for qGenes and cGenes.
-3.  **Validation & Benchmarking (`/03_benchmarking`):** Code to evaluate prioritization performance via AUC and compare against external datasets like Open Targets.
-4.  **Network & Pathway Analysis (`/04_network_analysis`):** Scripts to build hierarchical Reactome subgraphs (Signal Transduction, Immune System, Disease) and evaluate pathway enrichment odds ratios.
-5.  **Therapeutics (`/05_drug_repurposing`):** Algorithms for evaluating druggability and therapeutic landscape mapping.
+---
 
-*(Note: Detailed execution instructions and command-line arguments are provided within each subdirectory's local README).*
+## Methods Summary
 
+### 1. GWAS Data & SNP Processing
+
+- PCOS GWAS summary statistics were retrieved from the [NHGRI-EBI GWAS Catalog](https://www.ebi.ac.uk/gwas) (EFO:0000660)
+- 6 EAS studies (Han Chinese & Korean) and 5 EUR studies were included
+- Lead SNPs at genome-wide significance (P < 5×10⁻⁵) were expanded via linkage disequilibrium (LD) using [LDProxy](https://ldlink.nci.nih.gov/) (r² ≥ 0.5, ±500 kb window; 1000 Genomes Phase 3)
+- A composite SNP score integrating association P-value and LD r² was computed for each variant
+
+### 2. Core Gene Identification
+
+Three complementary approaches identify **core genes** — those with direct genomic evidence linking them to PCOS-associated SNPs:
+
+| Category | Description |
+|----------|-------------|
+| **rGenes** | Genes in physical proximity to SNPs, weighted by chromatin state (ChromHMM / Roadmap Epigenomics) and constrained by topologically associating domain (TAD) boundaries |
+| **qGenes** | Genes associated with SNPs via quantitative trait loci (eQTL, pQTL, etc.) from GTEx and QTLbase |
+| **cGenes** | Genes connected to SNP-overlapping enhancers through chromatin conformation (Hi-C / ABC model) |
+
+Core genes receive additional weight via functional annotation (fGenes from PCOSKB), phenotype evidence (pGenes from HPO), and disease evidence (dGenes from DisGeNet).
+
+### 3. Peripheral Gene Identification
+
+**Random Walk with Restart (RWR)** on the integrated PPI network (Cheng et al. interactome + STRING v12.0; ~17,500 genes) propagates influence from core genes to retrieve **peripheral genes** — functionally connected candidates lacking direct genomic evidence.
+
+### 4. Significance Index (Si) Scoring
+
+Scores from all six predictor categories (rGene, qGene, cGene, fGene, pGene, dGene) are combined using **Fisher's meta-analysis method** (via empirical CDF transformation) into a single composite P-value, then rescaled to a **0–5 Si score** for each gene across all tissues and populations.
+
+### 5. Benchmarking & Validation
+
+- **Benchmarking:** AUC-based comparison against Open Targets (text mining & genetic association) using PCOS Gold Standard Positives/Negatives (GSPs/GSNs) from ChEMBL v34
+- **Validation 1 (TSEA):** Target Set Enrichment Analysis (GSEA) of known PCOS drug targets (Phase 2+) in the Si-ranked gene list
+- **Validation 2 (CREEDS):** Gene Set Enrichment Analysis of PCOS patient DEGs from GEO (GSE5090, GSE6798, GSE8157, GSE98595, GSE155489, GSE138518, GSE106724)
+
+### 6. Downstream Analyses
+
+- **Pathway Enrichment:** Reactome pathways (MSigDB C2, v2023.2) via one-sided Fisher's exact test with Benjamini-Hochberg FDR correction
+- **Pathway Crosstalk:** Minimum-scoring subgraph extraction (prize-collecting Steiner tree) on MSigDB-annotated PPI subnet using the `dnet` R package
+- **Node Removal Analysis:** Single and combinatorial node removal to assess network robustness and drug repurposing potential
+- **Modular Analysis:** Community detection using spin-glass model (`clusterspinglass`, igraph v2.0.3) across cross-tissue merged crosstalk networks
+- **Cluster Analysis:** Self-organizing map (supraHex) on Si scores of crosstalk genes across tissues to define therapeutic space; druggability overlay using fpocket-annotated PDB structures
+---
+
+## Contact
+
+**Dr. Debojyoti De** (Corresponding Author)  
+Assistant Professor, Department of Biotechnology  
+National Institute of Technology Durgapur, West Bengal – 713209, India  
+📧 dde.bt@nitdgp.ac.in
+
+---
 ## Citation
-If you utilize this framework or code in your research, please cite our preprint:
-> Rajavelu, S., & De, D. (2026). *Evidence-based genetic variants to gene mapping and prioritization uncovers distinct molecular pathophysiology and therapeutic landscape in polycystic ovary syndrome patients of different ethnicities*. Research Square. [https://doi.org/10.21203/rs.3.rs-8610143/v1](https://doi.org/10.21203/rs.3.rs-8610143/v1)
+
+If you use this code, please cite:
+
+```bibtex
+@article{rajavelu2025pcos,
+  title   = {Evidence-based genetic variants to gene mapping and prioritization uncovers 
+             distinct molecular pathophysiology and therapeutic landscape in polycystic 
+             ovary syndrome patients of different ethnicities},
+  author  = {Rajavelu, Sindhuja and De, Debojyoti},
+  journal = {Research Square (Preprint)},
+  year    = {2025},
+  doi     = {10.21203/rs.3.rs-8610143/v1},
+  url     = {https://www.researchsquare.com/article/rs-8610143/v1}
+}
+---
 
 ## License
-[Insert License Here - e.g., MIT License]
+
+This work is licensed under a [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
